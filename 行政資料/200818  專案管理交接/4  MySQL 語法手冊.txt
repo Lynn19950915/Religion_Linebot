@@ -1,0 +1,182 @@
+
+---A.注意事項---
+
+1.使用MySQL前，先以密碼***登入
+
+2.[重要]執行查詢前，務必先宣告資料庫(機器人資料均儲存在info)
+
+  > use info; (執行成功將看到「database changed」)
+
+3.若要將搜尋紀錄存檔，請運用TEE+(路徑檔名)指令
+
+  > TEE C:\***\RECORD.txt; 
+
+  執行成功將看到「Logging to file C:\***\RECORD.txt」，桌面會出現一個文字檔
+
+  注意：現在RECORD還是空白檔案，只會從宣告TEE之後開始記錄，其內容跟Command line完全相同(圖9)
+
+  若要結束存檔，則執行NOTEE;即可
+
+
+---B.基本語法---
+
+1.SELECT+FROM: 不可省略的基本元素
+
+  SELECT: 後面接「要查看的欄位」
+
+  FROM: 後面接「要查看的資料表」
+
+  例1.查詢email資料表中的紀錄
+
+  > SELECT * FROM email; (列出所有欄位內容)
+
+  > SELECT userid, time FROM email; (只查看各條紀錄中傳送者id、時間兩項參數)
+
+
+2.WHERE: 後面接「表格的篩選條件」
+
+  例2.查詢userid 105號用戶轉傳的資料
+
+  > SELECT * FROM forward WHERE userid=105; (X，userid為文字欄位，要加上引號)
+
+  > SELECT * FROM forward WHERE userid="105"; (O)
+
+
+  例3.查詢10月14號總共新增幾筆臉書訊息
+
+  > SELECT * FROM facebook WHERE time="2020/10/14"; (X，time為整串數字，需經由函數轉換)
+
+  > SELECT count(*) FROM facebook WHERE from_unixtime(time)="2020/10/14"; (O，用count(*)更簡便看總數，無須逐筆列出)
+
+
+3.[重要]可以透過and一次定義數個篩選條件
+
+  例4.查詢共有幾則「有靈性啟發」的完整訊息
+
+  > SELECT count(*) FROM forward WHERE q1="有靈性啟發" and q6 IS NOT NULL;
+
+  註: IS NOT NULL可用來檢查資料空值
+
+
+  例5.查詢整個8月當中，共收到幾則圖片的轉傳訊息
+
+  > SELECT count(*) FROM forward WHERE content="圖片" and from_unixtime(time)>="2020/08/01" and from_unixtime(time)<="2020/08/31"; (並列三個條件)
+
+  > SELECT count(*) FROM forward WHERE content="圖片" and from_unixtime(time) between "2020/08/01" and "2020/08/31"; (也可以用between...and界定範圍)
+
+  > SELECT count(*) FROM forward WHERE content="圖片" and month(from_unixtime(time))=8; (直接用時間函數取月份，更有效率)
+
+
+---C.進階語法---
+
+1.好用函數
+
+  a.彙整函數
+
+    count(*): 只取資料計數。可用於核算、無須查列完整資料內容的狀況(宜搭配IS NOT NULL使用，如例4)
+
+    distinct(欄位): 針對該欄的不重複值計數。可用於計算人數、週數等狀況
+
+    max(欄位): 該欄的極大值。如該用戶的最新(最末)一則訊息資料max(time)
+
+  b.時間函數
+
+    month("2020/09/29")=9、week("2020/09/29")=40、date("2020/09/30")=30
+
+    註: week取的是「週次」而非星期幾，若要查看星期數，可用weekday或dayofweek等函數
+
+    可搭配from_unixtime函數將時間轉換為可讀格式，如例5
+
+
+2.GROUP BY: 後面接「資料的分組依據」
+
+  基本語法的查詢都是針對整份資料，若要做更細部的分組彙整，就需要使用GROUP BY
+
+  例6.比較不同的計數查詢
+
+  > SELECT count(*) FROM facebook; (查詢整張表的總筆數)
+
+  > SELECT userid, count(*) FROM facebook GROUP BY userid; (查看各個用戶「分別」新增的筆數)
+
+
+  例7.查詢各月份完整填答的轉傳訊息筆數
+
+  > SELECT month(from_unixtime(time)), count(*) FROM forward WHERE q6 IS NOT NULL GROUP BY month(from_unixtime(time));
+
+
+---(*_*)從這邊開始會變很難，加油---
+
+3.與WHERE邏輯相同，GROUP BY可以透過「,」一次加入數個分組依據
+
+  例8.查詢各用戶「逐月」完整填答的轉傳訊息筆數
+
+  > SELECT userid, month(from_unixtime(time)), count(*) WHERE q6 IS NOT NULL GROUP BY userid, month(from_unixtime(time));
+
+
+  [重要]GROUP BY具有順序性，會影響呈現上的排序
+
+  GROUP BY userid, month: 1號用戶在一月筆數、1號用戶在二月筆數、1號用戶在三月筆數...
+
+  GROUP BY month, userid: 一月中1號用戶筆數、一月中2號用戶筆數、一月中3號用戶筆數...
+
+
+  例9.查詢「逐週」各用戶完整填答的轉傳訊息筆數
+
+  > SELECT week(from_unixtime(time)), userid, count(*) WHERE q6 IS NOT NULL GROUP BY week(from_unixtime(time)), userid;
+
+  註: 先以週數分組、再依據userid細分，故查詢欄位的順序可以調換
+
+
+4.GROUP BY將資料做分組，可再利用WHERE加上條件篩選
+
+  例10.查詢「當月」各用戶完整填答的轉傳訊息筆數
+
+  > SELECT userid, count(*) WHERE q6 IS NOT NULL and month(from_unixtime(time))=12 GROUP BY userid;
+
+    (先用WHERE過濾掉所有「非12月」資料，無須再依月份分組。形同時間過濾後重做例6)
+
+
+  例11.查詢當月各用戶「逐週」完整填答的轉傳訊息筆數
+
+  > SELECT userid, week(from_unixtime(time)), count(*) WHERE q6 IS NOT NULL and month(from_unixtime(time))=12 GROUP BY userid, week(from_unixtime(time));
+
+    (先用WHERE過濾掉所有「非12月」資料，再依userid、週數分組計算。形同時間過濾後重做例9)
+
+
+  例12.查詢當週各用戶「逐天」完整填答的轉傳訊息筆數
+
+  > SELECT userid, date(from_unixtime(time)), count(*) WHERE q6 IS NOT NULL and week(from_unixtime)time))=week("2020-12-30") GROUP BY userid, date(from_unixtime(time));
+
+
+  例13.查詢當月各用戶「逐週逐天」完整填答的轉傳訊息筆數
+
+  > SELECT userid, week(from_unixtime(time)), date(from_unixtime(time)), count(*) WHERE q6 IS NOT NULL and month(from_unixtime(time))=12 
+
+    GROUP BY userid, week(from_unixtime(time)), date(from_unixtime(time));
+
+  註: 以userid為單位，查看逐週、逐天的筆數。拿掉week的部分就變成: 當月「逐天」筆數(少掉週數欄位)
+
+
+5.ORDER BY: 後面接「排序的依據」，預設是遞增排列
+
+  可以用「,」一次新增數個條件，做為前層相同時再往下續比的依據
+
+  例14.查詢轉傳訊息則數最多的用戶是誰
+
+  > SELECT userid, count(*) FROM forward GROUP BY userid ORDER BY count(*) desc (LIMIT 1); (以userid分組彙算，並依則數由高至低排列)
+
+  註: 也可以用max(count(*))改寫，會用到分組化條件HAVING
+
+  
+  例15.查詢最末一則LINE的訊息資料
+
+  > SELECT * FROM line ORDER BY time desc (LIMIT 1);
+
+  註：也可以用max(time)改寫，會用到子查詢
+
+
+6.LIMIT: 後面接「限定數量」，常與ORDER BY併用
+
+  例16.查詢近500則臉書的訊息資料
+
+  > SELECT * FROM facebook ORDER BY time desc LIMIT 500; (依時間倒序遞減)

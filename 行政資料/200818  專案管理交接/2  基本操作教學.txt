@@ -1,0 +1,39 @@
+
+---A.MySQL連線---
+
+1.點入MySQL Workbench或Command line，以***登入(密碼: ***)
+
+  註: 核算需要詳細.csv檔案比對，用Workbench較方便；若只是查看簡易數字，Command line就可以
+
+2.操作前，需指定info資料庫
+
+  > USE info;
+
+
+---B.常見工作流程---
+
+1.一般查看資料
+
+  > SELECT * FROM forward; 
+
+  註: 不建議，這會全部逐一列出，隨資料表增生將很耗時
+
+  > SELECT count(*) FROM forward; (目前分享訊息的總則數)
+
+  > SELECT count(distinct(userid)) FROM facebook; (有登錄過臉書訊息的不重複用戶人數)
+
+2.月度結算彙總
+
+  呼叫count腳本，需指明時間區間(給定起、末日)
+
+  > CALL info.count("2020/06/10", "2020/06/20");
+
+  運算後將出現monthly_calculate檔案，可用export功能輸出.csv檔
+
+3.有效資料分析
+
+  > SELECT * FROM line WHERE from_unixtime(time) between "2020/06/10" and "2020/06/20";
+
+  在Workbench執行的所有結果均可直接輸出，唯注意UTF-8亂碼問題
+
+  (參考資源: https://www.managertoday.com.tw/articles/view/55615)

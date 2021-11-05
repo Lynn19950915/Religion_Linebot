@@ -1,0 +1,50 @@
+
+---A.設計目標---
+
+1.完成三張資料表合併、彙算工作
+
+2.將Line紀錄之時間戳記(Unix timestamp)轉換為常見日期
+
+3.依據給定結算區間，自動輸出用戶各日之總填答筆數
+
+
+---B.腳本程式---
+
+CREATE DEFINER="***"@"localhost" PROCEDURE "count"(IN a date, IN b date)
+
+
+BEGIN
+
+DROP TABLE IF EXISTS monthly_calculation;
+CREATE TABLE monthly_calculation LIKE forward;
+
+INSERT INTO monthly_calculation SELECT * FROM forward;
+INSERT INTO monthly_calculation(userid, time, q1, makesure) SELECT * FROM facebook;
+INSERT INTO monthly_calculation(userid, time, q1, q2, makesure) SELECT * FROM line;
+
+SELECT userid, DATE_FORMAT(FROM_UNIXTIME(time), "%Y/%m/%d") as date, count(*)
+FROM monthly_calculation WHERE DATE_FORMAT(from_unixtime(time), "%Y/%m/%d") BETWEEN a AND b
+GROUP BY userid, date ORDER BY userid, date;
+
+END
+
+
+--C.使用說明---
+
+1.腳本物件
+
+  a.腳本名稱: count
+
+  b.自定義參數(呼叫時需輸入): a、b
+
+  c.運算結果表: monthly_calculate
+
+2.呼叫流程
+
+  a.每次呼叫時，會先刪除前次運算之結果，重新生成monthly_calculate
+
+  b.forward包含所有資料欄位，故複製forward之欄位定義，並依次加入三張資料表內容
+
+  c.運用date_format將時間戳記轉換為日期，並根據輸入之a、b篩選有效的時間範圍
+
+  d.依據userid、日期進行筆數彙總，並排序輸出

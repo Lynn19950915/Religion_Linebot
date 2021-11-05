@@ -1,0 +1,82 @@
+
+---A.遠端連線---
+
+1.遠端連線的登入密碼是***
+
+  伺服器(社會所8樓)電腦一次只能受一台(遠端)電腦操控，盡量避免長時間佔線，尤其是需要排除故障時
+
+2.MySQL Workbench和PyCharm需要長時間開啟
+
+  前者沒開資料庫可能會連不上，後者關了整套腳本一定掛
+
+　例: 社會所斷電、關機的情況，絕對會導致機器人不能用，確認時間後要提前知會使用者！
+
+
+---B.系統基本操作---
+
+1.PyCharm無登入密碼，WIN鍵搜尋: JetBrains即可開啟(圖1)
+
+  平時只需確認PyCharm開啟，且ngrok有維持正常連線即可(Session Status: online，圖2)
+
+2.MySQL的登入密碼是***，WIN鍵搜尋: MySQL即可開啟(圖3)
+
+3.MySQL Workbench和Command line功能實際上相同
+
+  只是圖形介面與指令行輸入的差別，兩者點開後均需輸入密碼方可連線(圖4)
+
+  平時只需確認MySQL開啟，且已以***身分連入資料庫
+
+
+---C.基本故障排除---
+
+1.機器人故障可以分成以下三階段排除:
+
+  PyCharm是否有開／MySQL(Workbench)是否有開／Ngrok是否故障
+
+2.if(PyCharm沒開){
+
+　腳本url整個失效，需要先開啟JetBrains，並點按下方terminal開啟終端機(圖5)
+
+  a.開啟local(圖6)，輸入「ngrok http 8000 -region=ap」
+
+    註: -region=ap代表設定亞太伺服器，通常會比預設的us更穩定
+
+  b.若成功將看到成功連線畫面(Session Status: online，圖2)，複製帶有https的網址給怡霖(圖7)
+
+　　例: https://99a54ea75d94.ap.ngrok.io 
+
+  c.開啟另一個local，輸入「python manage.py runserver」，協助連線好的腳本重新啟動
+
+  d.點按機器人測試功能，若修復成功將獲得回應，PyCharm會顯示「"POST /callback HTTP/1.1"」(圖8)
+
+
+3.}else if(MySQL沒開){
+
+  腳本url已透過ngrok連線，但呼叫MySQL失敗、資料無法串流
+
+  a.先確認ngrok狀態為成功連線畫面(Session Status: online，圖2)，否則要走第2點修復
+
+  b.開啟MySQL Workbench後，點按***並輸入密碼連線(圖4)
+
+    註: 保險起見建議同時開啟Command line，一起連線
+
+  c.點按機器人測試功能，若修復成功將獲得回應，PyCharm會顯示「"POST /callback HTTP/1.1"」(圖8)
+
+
+4.}else{
+
+  a.先確認ngrok狀態為成功連線畫面(Session Status: online，圖2)，否則要走第2點修復
+
+    再確認MySQL Workbench是否開啟，且已以***身分連入資料庫，否則要走第3點修復
+
+  b.在原先執行ngrok的local端按「Ctrl+C」退出，嘗試替換region參數
+
+　　註: -region=eu, -region=ap, 省略不打(預設為us)，三者交互輪替即可
+
+  c.若成功將看到成功連線畫面(Session Status: online，圖2)，複製帶有https的新網址給怡霖(圖7)
+
+　　例: https://xj04a83tgt6fu4.ap.ngrok.io 
+
+  d.開啟另一個local，輸入「python manage.py runserver」，協助連線好的腳本重新啟動
+
+  e.點按機器人測試功能，若修復成功將獲得回應，PyCharm會顯示「"POST /callback HTTP/1.1"」(圖8)
